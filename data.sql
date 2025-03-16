@@ -28,3 +28,25 @@ INSERT INTO invoices (comp_Code, amt, paid, paid_date)
          ('apple', 200, false, null),
          ('apple', 300, true, '2018-01-01'),
          ('ibm', 400, false, null);
+
+-- Create industries table
+CREATE TABLE industries (
+  code VARCHAR(10) PRIMARY KEY,
+  industry VARCHAR(100) NOT NULL
+);
+
+-- Create companies_industries table to associate companies and industries (many-to-many)
+CREATE TABLE companies_industries (
+  company_code VARCHAR(10),
+  industry_code VARCHAR(10),
+  PRIMARY KEY (company_code, industry_code),
+  FOREIGN KEY (company_code) REFERENCES companies(code) ON DELETE CASCADE,
+  FOREIGN KEY (industry_code) REFERENCES industries(code) ON DELETE CASCADE
+);
+
+-- Example insert data
+INSERT INTO industries (code, industry) VALUES 
+('tech', 'Technology'),
+('med', 'Medical'),
+('acct', 'Accounting');
+

@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../db");
 const ExpressError = require("../expressError");
+const slugify = require("slugify");
 
 const router = new express.Router();
 
@@ -14,7 +15,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-// GET /companies/:code - Get details of a specific company, including invoices
+// GET /companies/:code - Get details of a specific company, including invoices and industries
 router.get("/:code", async (req, res, next) => {
   try {
     const { code } = req.params;
@@ -32,21 +33,36 @@ router.get("/:code", async (req, res, next) => {
       [code]
     );
 
+    // Fetch industries associated with the company
+    const industriesResult = await db.query(
+      `SELECT i.code, i.industry
+       FROM industries AS i
+       JOIN companies_industries AS ci ON ci.industry_code = i.code
+       WHERE ci.company_code = $1`,
+      [code]
+    );
+
     return res.json({
       company: {
         ...companyResult.rows[0],
         invoices: invoicesResult.rows.map(invoice => invoice.id),
-      },
+        industries: industriesResult.rows.map(industry => ({
+          code: industry.code,
+          industry: industry.industry
+        }))
+      }
     });
   } catch (err) {
     return next(err);
   }
 });
 
-// POST /companies - Add a new company
+// POST /companies - Add a new company (Slugified code)
 router.post("/", async (req, res, next) => {
   try {
-    const { code, name, description } = req.body;
+    const { name, description } = req.body;
+    const code = slugify(name, { lower: true, strict: true }); // Slugify company name for code
+
     const result = await db.query(
       "INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING code, name, description",
       [code, name, description]
